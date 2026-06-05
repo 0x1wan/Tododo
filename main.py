@@ -20,32 +20,48 @@ class TodoListWidget(QListWidget):
     def dropEvent(self, event):
         super().dropEvent(event)
         # 드래그 앤 드롭 직후, 이동된 항목의 고유 순서값(order_id)을 재계산
+        
         dropped_item = self.currentItem()
         if not dropped_item: return
 
         idx = self.row(dropped_item)
 
-        # 위쪽 항목의 순서값 가져오기
         order_above = 0.0
         if idx > 0:
             item_above = self.item(idx - 1)
             order_above = float(item_above.data(Qt.ItemDataRole.UserRole) or 0.0)
 
-        # 아래쪽 항목의 순서값 가져오기 (맨 밑으로 내렸을 경우 여유 있게 1000을 더함)
         order_below = order_above + 1000.0 
         if idx < self.count() - 1:
             item_below = self.item(idx + 1)
             order_below = float(item_below.data(Qt.ItemDataRole.UserRole) or order_above + 1000.0)
 
-        # 새로운 순서값은 위와 아래의 정확히 중간값으로 세팅
         new_order = (order_above + order_below) / 2.0
         dropped_item.setData(Qt.ItemDataRole.UserRole, new_order)
 
-        # 변경된 값을 기반으로 즉시 재정렬
         parent_widget = self.window()
         if hasattr(parent_widget, 'sort_todos'):
             parent_widget.sort_todos()
 
+    # --- [신규] 키보드 이벤트 감지 로직 ---
+    def keyPressEvent(self, event):
+        # 1. 누른 키가 Delete 키인지 확인
+        if event.key() == Qt.Key.Key_Delete:
+            # 2. 현재 선택된 항목들을 가져옴
+            selected_items = self.selectedItems()
+            if selected_items:
+                # 3. 선택된 항목들을 리스트에서 즉시 제거
+                for item in selected_items:
+                    self.takeItem(self.row(item))
+                
+                # 4. 부모 창(TododoApp)의 저장 함수를 호출하여 JSON 데이터베이스 동기화
+                parent_widget = self.window()
+                if hasattr(parent_widget, 'save_todos'):
+                    parent_widget.save_todos()
+        else:
+            # Delete 키가 아니라면 기본 키보드 동작(방향키 이동 등)을 수행하도록 넘김
+            super().keyPressEvent(event)
+    
 
 
 

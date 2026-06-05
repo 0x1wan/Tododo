@@ -3,3 +3,8 @@ __pycache__/
 *.pyc
 .vscode/
 todo_data.json
+
+# PyInstaller 빌드 결과물 및 임시 파일 무시
+build/
+dist/
+*.spec
